@@ -13,8 +13,31 @@ const config = {
     requestTimeout: process.env.ELASTICSEARCH_REQUEST_TIMEOUT,
     pingTimeout: process.env.ELASTICSEARCH_PING_TIMEOUT
   },
-  mappingProperties: {
-
+  mappingProperties:  {
+    docType: {
+      type: "keyword"
+    },
+    id: {
+      type: "keyword"
+    },
+    name: {
+      type: "text",
+      fields: {
+        keyword: {
+          type: "keyword",
+          ignore_above: 256
+        }
+      }
+    },
+    is_active: {
+      type: "boolean"
+    },
+    created_at: {
+      type: "date"
+    },
+    updated_at: {
+      type: "date"
+    }
   }
 };
 

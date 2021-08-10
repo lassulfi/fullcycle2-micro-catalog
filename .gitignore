@@ -64,5 +64,5 @@ typings/
 # Cache used by TypeScript's incremental build
 *.tsbuildinfo
 
-# docker container folder
-.docker/
+# elasticsearch docker container folder
+.docker/elasticdata/
