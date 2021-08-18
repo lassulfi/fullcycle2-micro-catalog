@@ -1,10 +1,19 @@
 import {Context} from '@loopback/context';
 import {Server} from '@loopback/core';
+import {repository} from '@loopback/repository';
 import {Channel, connect, Connection, Replies} from 'amqplib';
+import {Category} from '../models';
+import {CategoryRepository} from '../repositories';
 
 export class RabbitmqServer extends Context implements Server {
   private _listening: boolean;
   conn: Connection;
+
+  constructor(@repository(CategoryRepository) private categoryRepo: CategoryRepository) {
+    super();
+    console.log(this.categoryRepo);
+  }
+
 
   async start(): Promise<void> {
     this.conn = await connect({
@@ -18,22 +27,39 @@ export class RabbitmqServer extends Context implements Server {
 
   async boot() {
     const channel: Channel = await this.conn.createChannel();
-    const queue: Replies.AssertQueue = await channel.assertQueue('first-queue');
+    const queue: Replies.AssertQueue =
+      await channel.assertQueue('micro-catalog/sync-videos');
     const exchange: Replies.AssertExchange =
-      await channel.assertExchange('amq.direct', 'direct');
+      await channel.assertExchange('amq.topic', 'topic');
 
-    await channel.bindQueue(queue.queue, exchange.exchange, 'minha-routing-key');
+    await channel.bindQueue(queue.queue, exchange.exchange, 'model.*.*');
 
-    // const result = channel.sendToQueue('first-queue',
-    //   Buffer.from('hello, world!'));
-    // console.log(result);
-    await channel.publish('amq.direct',
-      'minha-routing-key',
-      Buffer.from('publicado por routing key'));
-
-    channel.consume(queue.queue, (message) => {
-      console.log(message?.content.toString());
+    await channel.consume(queue.queue, (message) => {
+      if (!message) {
+        return;
+      }
+      const data = JSON.parse(message.content.toString());
+      const [model, event] = message.fields.routingKey.split('.').slice(1);
+      this.sync({model, event, data});
+      console.log(model, event);
     });
+  }
+
+  async sync({model, event, data}: {model: string, event: string, data: Category}) {
+    if (model === 'category') {
+      switch (event) {
+        case 'created':
+          await this.categoryRepo.create({
+            ...data,
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+          break;
+
+        default:
+          break;
+      }
+    }
   }
 
   async stop(): Promise<void> {

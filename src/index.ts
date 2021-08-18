@@ -1,6 +1,6 @@
+import './bootstrap';
 import {RestServer} from '@loopback/rest';
 import {ApplicationConfig, MicroCatalogApplication} from './application';
-import './bootstrap';
 
 export * from './application';
 
