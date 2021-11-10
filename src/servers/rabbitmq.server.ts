@@ -8,6 +8,7 @@ import {CategoryRepository} from '../repositories';
 export class RabbitmqServer extends Context implements Server {
   private _listening: boolean;
   conn: Connection;
+  channel: Channel;
 
   constructor(@repository(CategoryRepository) private categoryRepo: CategoryRepository) {
     super();
@@ -26,21 +27,26 @@ export class RabbitmqServer extends Context implements Server {
   }
 
   async boot() {
-    const channel: Channel = await this.conn.createChannel();
+    this.channel = await this.conn.createChannel();
     const queue: Replies.AssertQueue =
-      await channel.assertQueue('micro-catalog/sync-videos');
+      await this.channel.assertQueue('micro-catalog/sync-videos');
     const exchange: Replies.AssertExchange =
-      await channel.assertExchange('amq.topic', 'topic');
+      await this.channel.assertExchange('amq.topic', 'topic');
 
-    await channel.bindQueue(queue.queue, exchange.exchange, 'model.*.*');
+    await this.channel.bindQueue(queue.queue, exchange.exchange, 'model.*.*');
 
-    await channel.consume(queue.queue, (message) => {
+    await this.channel.consume(queue.queue, (message) => {
       if (!message) {
         return;
       }
       const data = JSON.parse(message.content.toString());
       const [model, event] = message.fields.routingKey.split('.').slice(1);
-      this.sync({model, event, data});
+      this.sync({model, event, data})
+        .then(() => this.channel.ack(message))
+        .catch((error) => {
+          console.error(error);
+          this.channel.reject(message, false)
+        });
       console.log(model, event);
     });
   }
@@ -51,12 +57,15 @@ export class RabbitmqServer extends Context implements Server {
         case 'created':
           await this.categoryRepo.create({
             ...data,
-            created_at: new Date(),
-            updated_at: new Date(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           });
           break;
-
-        default:
+        case 'updated':
+          await this.categoryRepo.updateById(data.id, data);
+          break;
+        case 'deleted':
+          await this.categoryRepo.deleteById(data.id);
           break;
       }
     }

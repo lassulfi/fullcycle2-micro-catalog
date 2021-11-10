@@ -43,8 +43,7 @@ function myClassDecorator(spec: MyClassMetaData): ClassDecorator {
   const factory = new ClassDecoratorFactory<MyClassMetaData>(
     'metadata-my-class-decorator',
     spec
-  )
-
+  );
   return factory.create();
 }
 
