@@ -2,22 +2,22 @@ import {injectable, /* inject, */ BindingScope} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {Message} from 'amqplib';
 import {rabbitmqSubscribe} from '../decorators';
-import {Category} from '../models';
-import {CategoryRepository} from '../repositories';
+import {CastMemberRepository} from '../repositories';
 import {BaseModelSyncService} from './base-model-sync.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
-export class CategorySyncService extends BaseModelSyncService {
-  constructor(
-    @repository(CategoryRepository) private repo: CategoryRepository,
-  ) {
+export class CastMemberSyncService extends BaseModelSyncService {
+  constructor(@repository(CastMemberRepository) private repo: CastMemberRepository) {
     super();
   }
 
+  /*
+   * Add service methods here
+   */
   @rabbitmqSubscribe({
     exchange: 'amq.topic',
-    queue: 'micro-catalog/sync-videos/category',
-    routingKey: 'model.category.*'
+    queue: 'micro-catalog/sync-videos/cast_member',
+    routingKey: 'model.cast_member.*'
   })
   async handler({data, message}: {data: any, message: Message}) {
     await this.sync({

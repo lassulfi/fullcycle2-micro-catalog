@@ -1,13 +1,9 @@
-import {Context, inject, MetadataInspector} from '@loopback/context';
-import {Application, ApplicationConfig, CoreBindings, Server} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {Binding, Context, inject, MetadataInspector} from '@loopback/context';
+import {Application, CoreBindings, Server} from '@loopback/core';
 import {AmqpConnectionManager, AmqpConnectionManagerOptions, ChannelWrapper, connect} from 'amqp-connection-manager';
-import {Channel, ConfirmChannel, Connection, Options, Replies} from 'amqplib';
+import {Channel, ConfirmChannel, Options} from 'amqplib';
 import {RabbitmqSubscribeMetadata, RABBITMQ_SUBSCRIBE_DECORATOR} from '../decorators';
 import {RabbitmqBindings} from '../keys';
-import {Category} from '../models';
-import {CategoryRepository} from '../repositories';
-import {CategorySyncService} from '../services';
 
 export interface RabbitmqConfig {
   uri: string;
@@ -23,11 +19,9 @@ export class RabbitmqServer extends Context implements Server {
 
   constructor(
     @inject(CoreBindings.APPLICATION_INSTANCE) public app: Application,
-    @repository(CategoryRepository) private categoryRepo: CategoryRepository,
     @inject(RabbitmqBindings.CONFIG) private config: RabbitmqConfig
   ) {
     super(app);
-    console.log(this.config);
   }
 
   async start(): Promise<void> {
@@ -42,13 +36,7 @@ export class RabbitmqServer extends Context implements Server {
       console.error(`Failed to setup RabbitMQ channel name: ${name} | error: ${err.message}`)
     });
     await this.setupExchanges();
-
-    const service = this.getSync<CategorySyncService>('services.CategorySyncService');
-    const metadata = MetadataInspector.getAllMethodMetadata<RabbitmqSubscribeMetadata>(
-      RABBITMQ_SUBSCRIBE_DECORATOR, service
-    );
-    console.log(metadata);
-    // this.boot();
+    await this.bindSubscribers();
   }
 
   private async setupExchanges() {
@@ -63,50 +51,89 @@ export class RabbitmqServer extends Context implements Server {
     });
   }
 
-  async boot() {
-    // @ts-ignore
-    this.channel = await this.conn.createChannel();
-    const queue: Replies.AssertQueue =
-      await this.channel.assertQueue('micro-catalog/sync-videos');
-    const exchange: Replies.AssertExchange =
-      await this.channel.assertExchange('amq.topic', 'topic');
+  private async bindSubscribers() {
+    this
+      .getSubscribers()
+      .map(async (item: {method: Function, metadata: RabbitmqSubscribeMetadata}) => {
+        await this.channelManager.addSetup(async (channel: ConfirmChannel) => {
+          const {exchange, queue, routingKey, queueOptions} = item.metadata;
+          const assertQueue = await channel.assertQueue(
+            queue ?? '',
+            queueOptions ?? undefined
+          );
 
-    await this.channel.bindQueue(queue.queue, exchange.exchange, 'model.*.*');
+          const routingKeys = Array.isArray(routingKey) ? routingKey : [routingKey];
 
-    await this.channel.consume(queue.queue, (message) => {
-      if (!message) {
-        return;
-      }
-      const data = JSON.parse(message.content.toString());
-      const [model, event] = message.fields.routingKey.split('.').slice(1);
-      this.sync({model, event, data})
-        .then(() => this.channel.ack(message))
-        .catch((error) => {
-          console.error(error);
-          this.channel.reject(message, false)
+          await Promise.all(
+            routingKeys.map(key => channel.bindQueue(assertQueue.queue, exchange, key))
+          );
+
+          await this.consume({
+            channel,
+            queue: assertQueue.queue,
+            method: item.method
+          });
         });
-      console.log(model, event);
-    });
+      });
   }
 
-  async sync({model, event, data}: {model: string, event: string, data: Category}) {
-    if (model === 'category') {
-      switch (event) {
-        case 'created':
-          await this.categoryRepo.create({
-            ...data,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+  private getSubscribers(): {method: Function, metadata: RabbitmqSubscribeMetadata}[] {
+    const bindings: Array<Readonly<Binding>> = this.find('services.*');
+
+    return bindings
+    .map(
+      binding => {
+        const metadata = MetadataInspector.getAllMethodMetadata<RabbitmqSubscribeMetadata>(
+          RABBITMQ_SUBSCRIBE_DECORATOR, binding.source?.value.prototype
+        );
+        if (!metadata) {
+          return [];
+        }
+
+        const methods = [];
+        for (const methodName in metadata) {
+          if (!Object.prototype.hasOwnProperty.call(metadata, methodName)) {
+            return;
+          }
+          const service = this.getSync(binding.key) as any;
+          methods.push({
+            method: service[methodName].bind(service),
+            metadata: metadata[methodName],
           });
-          break;
-        case 'updated':
-          await this.categoryRepo.updateById(data.id, data);
-          break;
-        case 'deleted':
-          await this.categoryRepo.deleteById(data.id);
-          break;
+        }
+
+        return methods;
       }
-    }
+    )
+    .reduce((collection: any, item: any) => {
+      collection.push(...item);
+      return collection;
+    }, []);
+  }
+
+  private async consume({channel, queue, method}: {channel: ConfirmChannel, queue: string, method: Function}): Promise<void> {
+    await channel.consume(queue, async message => {
+      try {
+        if(!message) {
+          throw new Error('Received null message');
+        }
+
+        const content = message.content;
+        if (content) {
+          let data;
+          try {
+            data = JSON.parse(content.toString());
+          } catch (error) {
+            data = null;
+          }
+          await method({data, message, channel});
+          channel.ack(message);
+        }
+      } catch (error) {
+        console.error(error);
+        // political de resposta
+      }
+    });
   }
 
   async stop(): Promise<void> {
