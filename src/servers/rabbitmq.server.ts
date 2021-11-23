@@ -1,14 +1,22 @@
 import {Binding, Context, inject, MetadataInspector} from '@loopback/context';
 import {Application, CoreBindings, Server} from '@loopback/core';
 import {AmqpConnectionManager, AmqpConnectionManagerOptions, ChannelWrapper, connect} from 'amqp-connection-manager';
-import {Channel, ConfirmChannel, Options} from 'amqplib';
+import {Channel, ConfirmChannel, Message, Options} from 'amqplib';
 import {RabbitmqSubscribeMetadata, RABBITMQ_SUBSCRIBE_DECORATOR} from '../decorators';
 import {RabbitmqBindings} from '../keys';
+
+export enum ResponseEnum {
+  ACK,
+  REQUEUE,
+  NACK
+}
 
 export interface RabbitmqConfig {
   uri: string;
   connOptions?: AmqpConnectionManagerOptions;
-  exchanges?: {name: string; type: string; options?: Options.AssertExchange}[]
+  exchanges?: {name: string; type: string; options?: Options.AssertExchange}[];
+  defaultHandlerError?: ResponseEnum;
+
 }
 
 export class RabbitmqServer extends Context implements Server {
@@ -126,14 +134,31 @@ export class RabbitmqServer extends Context implements Server {
           } catch (error) {
             data = null;
           }
-          await method({data, message, channel});
-          channel.ack(message);
+          const responseType = await method({data, message, channel});
+          this.dispatchResponse(channel, message, responseType);
         }
       } catch (error) {
         console.error(error);
-        // political de resposta
+        if(!message) {
+          return;
+        }
+        this.dispatchResponse(channel, message, this.config?.defaultHandlerError);
       }
     });
+  }
+
+  private dispatchResponse(channel: Channel, message: Message, responseType?: ResponseEnum) {
+    switch (responseType) {
+      case ResponseEnum.REQUEUE:
+        channel.nack(message, false, true);
+        break;
+      case ResponseEnum.NACK:
+        channel.nack(message, false, false);
+        break;
+      case ResponseEnum.ACK:
+      default:
+        channel.ack(message);
+    }
   }
 
   async stop(): Promise<void> {

@@ -6,7 +6,7 @@ import {Category} from '../models';
 import {CategoryRepository} from '../repositories';
 import {BaseModelSyncService} from './base-model-sync.service';
 
-@injectable({scope: BindingScope.TRANSIENT})
+@injectable({scope: BindingScope.SINGLETON})
 export class CategorySyncService extends BaseModelSyncService {
   constructor(
     @repository(CategoryRepository) private repo: CategoryRepository,

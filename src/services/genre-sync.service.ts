@@ -5,7 +5,7 @@ import {rabbitmqSubscribe} from '../decorators';
 import {GenreRepository} from '../repositories';
 import {BaseModelSyncService} from './base-model-sync.service';
 
-@injectable({scope: BindingScope.TRANSIENT})
+@injectable({scope: BindingScope.SINGLETON})
 export class GenreSyncService extends BaseModelSyncService {
   constructor(@repository(GenreRepository) private repo: GenreRepository) {
     super();
