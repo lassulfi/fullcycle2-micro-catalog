@@ -2,9 +2,10 @@ import {DefaultCrudRepository} from '@loopback/repository';
 import {default as chalk} from 'chalk';
 import {Client} from 'es7';
 import {MicroCatalogApplication} from '..';
-import * as config from '../config';
+import config from '../config';
 import {Esv7DataSource} from '../datasources';
 import fixtures from '../fixtures';
+import {ValidatorService} from '../services';
 
 export class FixturesCommand {
   static command = 'fixtures';
@@ -17,8 +18,15 @@ export class FixturesCommand {
     await this.bootApp();
     console.log(chalk.green('Delete all documents'));
     await this.deleteAllDocuments();
+
+    const validator = this.app.getSync<ValidatorService>('services.ValidatorService');
+
     for (const fixture of fixtures) {
       const repository = this.getRepository<DefaultCrudRepository<any, any>>(fixture.model);
+      await validator.validate({
+        data: fixture.fields,
+        entityClass: (repository as DefaultCrudRepository<any, any>).entityClass
+      })
       await (repository as any).create(fixture.fields);
     }
 

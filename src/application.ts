@@ -5,9 +5,12 @@ import {RestComponent, RestServer} from '@loopback/rest';
 import {RestExplorerBindings} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
-import {RestExplorerComponent} from './components/rest-explorer.component';
+import {RestExplorerComponent, ValidatorsComponent} from './components';
+import {Category} from './models';
 import {MySequence} from './sequence';
 import {RabbitmqServer} from './servers';
+import {ValidatorService} from './services/validator.service';
+// import {CrudRestComponent} from '@loopback/rest-crud';
 
 export {ApplicationConfig};
 
@@ -27,6 +30,7 @@ export class MicroCatalogApplication extends BootMixin(
       path: '/explorer',
     });
     this.component(RestExplorerComponent);
+    this.component(ValidatorsComponent);
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -40,5 +44,22 @@ export class MicroCatalogApplication extends BootMixin(
     };
 
     this.server(RabbitmqServer);
+    // this.component(CrudRestComponent);
+  }
+
+  async boot() {
+    await super.boot();
+
+    // const validator = this.getSync<ValidatorService>('services.ValidatorService');
+    // try {
+    //   validator.validate({
+    //     data: {
+    //       id: '12'
+    //     },
+    //     entityClass: Category
+    //   });
+    // } catch (error) {
+    //   console.dir(error, {depth: 8});
+    // }
   }
 }
