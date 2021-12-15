@@ -43,6 +43,22 @@ const config = {
     },
     updated_at: {
       type: "date"
+    },
+    categories: {
+      type: 'nested',
+      properties: {
+        id: { type: 'keyword' },
+        name: {
+          type: 'text',
+          fields: {
+            keyword: {
+              type: "keyword",
+              ignore_above: 256
+            }
+          }
+        },
+        is_active: { type: 'boolean' }
+      }
     }
   }
 };
