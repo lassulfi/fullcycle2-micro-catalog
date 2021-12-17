@@ -7,6 +7,7 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 import {RestExplorerComponent, ValidatorsComponent} from './components';
 import {Category} from './models';
+import {UpdateCategoryRelationObserver} from './observers/update-category-relation.observer';
 import {MySequence} from './sequence';
 import {RabbitmqServer} from './servers';
 import {ValidatorService} from './services/validator.service';
@@ -32,6 +33,8 @@ export class MicroCatalogApplication extends BootMixin(
     this.component(RestExplorerComponent);
     this.component(ValidatorsComponent);
 
+    this.lifeCycleObserver(UpdateCategoryRelationObserver);
+
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
     this.bootOptions = {
@@ -49,6 +52,17 @@ export class MicroCatalogApplication extends BootMixin(
 
   async boot() {
     await super.boot();
+
+    const categoryRepo = this.getSync('repositories.CategoryRepository');
+
+    // @ts-ignore
+    const category = await categoryRepo.find({where: {id: '1-cat'}});
+
+    // @ts-ignore
+    categoryRepo.updateById(category[0].id, {
+      ...category[0],
+      name: 'Funcionando no loopback'
+    });
 
     // const validator = this.getSync<ValidatorService>('services.ValidatorService');
     // try {
