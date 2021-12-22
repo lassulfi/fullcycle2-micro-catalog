@@ -19,7 +19,10 @@ export class CategorySyncService extends BaseModelSyncService {
   @rabbitmqSubscribe({
     exchange: 'amq.topic',
     queue: 'micro-catalog/sync-videos/category',
-    routingKey: 'model.category.*'
+    routingKey: 'model.category.*',
+    queueOptions: {
+      deadLetterExchange: 'dlx.amq.topic',
+    }
   })
   async handler({data, message}: {data: any, message: Message}) {
     await this.sync({

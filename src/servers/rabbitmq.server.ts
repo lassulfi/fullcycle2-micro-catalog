@@ -15,6 +15,7 @@ export interface RabbitmqConfig {
   uri: string;
   connOptions?: AmqpConnectionManagerOptions;
   exchanges?: {name: string; type: string; options?: Options.AssertExchange}[];
+  queues?: {name: string; exchange?: {name: string; routingKey: string}; options?: Options.AssertQueue}[]
   defaultHandlerError?: ResponseEnum;
 
 }
@@ -44,6 +45,7 @@ export class RabbitmqServer extends Context implements Server {
       console.error(`Failed to setup RabbitMQ channel name: ${name} | error: ${err.message}`)
     });
     await this.setupExchanges();
+    await this.setupQueues();
     await this.bindSubscribers();
   }
 
@@ -56,6 +58,22 @@ export class RabbitmqServer extends Context implements Server {
       await Promise.all(this.config.exchanges.map((exchange) => (
         channel.assertExchange(exchange.name, exchange.type, exchange.options)
       )));
+    });
+  }
+
+  private async setupQueues() {
+    return this.channelManager.addSetup(async (channel: ConfirmChannel) => {
+      if (!this.config.queues) {
+        return;
+      }
+
+      await Promise.all(this.config.queues.map(async (queue) => {
+        await channel.assertQueue(queue.name, queue.options);
+        if (!queue.exchange) {
+          return;
+        }
+        await channel.bindQueue(queue.name, queue.exchange.name, queue.exchange.routingKey);
+      }));
     });
   }
 

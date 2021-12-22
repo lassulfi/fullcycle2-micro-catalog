@@ -18,10 +18,22 @@ const config: ApplicationConfig = {
   rabbitmq: {
     uri: process.env.RABBITMQ_URI,
     defaultHandlerError: parseInt(process.env.RABBITMQ_HANDLER_ERROR ?? '0'),
-    // exchanges: [
-    //   {name: 'test1', type: 'direct'},
-    //   {name: 'test2', type: 'direct'},
-    // ]
+    exchanges: [
+      {name: 'dlx.amq.topic', type: 'topic'},
+    ],
+    queues: [
+      {
+        name: 'dlx.sync-videos',
+        exchange: {
+          name: 'dlx.amq.topic',
+          routingKey: 'model.category.*',
+        },
+        options: {
+          deadLetterExchange: 'amq.topic',
+          messageTTL: 20000
+        }
+      }
+    ]
   }
 };
 
