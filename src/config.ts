@@ -26,7 +26,7 @@ const config: ApplicationConfig = {
         name: 'dlx.sync-videos',
         exchange: {
           name: 'dlx.amq.topic',
-          routingKey: 'model.category.*',
+          routingKey: 'model.*.*',
         },
         options: {
           deadLetterExchange: 'amq.topic',
