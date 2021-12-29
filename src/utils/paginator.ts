@@ -1,7 +1,9 @@
 import {RequestContext} from '@loopback/rest';
-import {stringify} from 'querystring';
+import {classToPlain, Exclude, Expose} from 'class-transformer';
+import {stringify} from 'qs';
 
 export class PaginatorSerializer<T = any> {
+  @Exclude()
   baseUrl: string;
 
   constructor(
@@ -11,6 +13,7 @@ export class PaginatorSerializer<T = any> {
     public offset: number,
   ) {}
 
+  @Expose()
   get previous_url(): string | null {
     let previous: string | null = null;
 
@@ -18,7 +21,9 @@ export class PaginatorSerializer<T = any> {
       previous = `${this.baseUrl}?${stringify({
         filter: {
           limit: this.limit,
-          ...(this.offset - this.limit >= 0 && {offset: this.offset}),
+          ...(this.offset - this.limit > 0 && {
+            offset: this.offset - this.limit
+          }),
         }
       })}`;
     }
@@ -26,6 +31,7 @@ export class PaginatorSerializer<T = any> {
     return previous;
   }
 
+  @Expose()
   get next_url(): string | null {
     let next: string | null = null;
 
@@ -42,15 +48,20 @@ export class PaginatorSerializer<T = any> {
     return next;
   }
 
+  // toJson(req: RequestContext) {
+  //   this.baseUrl = `${req.requestedBaseUrl}${req.request.url}`.split('?')[0];
+  //   return {
+  //     results: this.results,
+  //     count: this.count,
+  //     limit: this.limit,
+  //     offset: this.offset,
+  //     previous_url: this.previous_url,
+  //     next_url: this.next_url,
+  //   };
+  // }
+
   toJson(req: RequestContext) {
-    this.baseUrl = `${req.requestedBaseUrl}${req.request.url}`;
-    return {
-      results: this.results,
-      count: this.count,
-      limit: this.limit,
-      offset: this.offset,
-      previous_url: this.previous_url,
-      next_url: this.next_url,
-    };
+    this.baseUrl = `${req.requestedBaseUrl}${req.request.url}`.split('?')[0];
+    return classToPlain(this);
   }
 }

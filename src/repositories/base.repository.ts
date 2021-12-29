@@ -9,8 +9,10 @@ export class BaseRepository<T extends Entity, ID, Relations extends object = {}>
   async paginate(filter?: Filter<T>, options?: Options) {
     const count = (await this.count(filter?.where, options)).count;
     const results = await this.find(filter, options);
-    const limit = filter?.limit ?? this.dataSource.settings.defaultSize;
-    const offset = filter?.offset ?? 0;
+    let limit = filter?.limit ?? this.dataSource.settings.defaultSize;
+    limit = parseInt(limit + '');
+    let offset = filter?.offset ?? 0;
+    offset = parseInt(offset + '');
     return new PaginatorSerializer<T>(
       results,
       count,
