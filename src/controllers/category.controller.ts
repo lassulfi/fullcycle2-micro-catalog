@@ -12,7 +12,7 @@ import {
   getModelSchemaRef,
 } from '@loopback/rest';
 import {CategoryFilterBuilder} from '../filters';
-import {Category} from '../models';
+import {Category, Genre} from '../models';
 import {CategoryRepository} from '../repositories';
 import {PaginatorSerializer} from '../utils/paginator';
 
@@ -75,7 +75,16 @@ export class CategoryController {
     @param.path.string('id') id: string,
     @param.filter(Category, {exclude: 'where'}) filter?: Filter<Category>
   ): Promise<Category> {
-    const newFilter = new CategoryFilterBuilder()
+    console.dir(new CategoryFilterBuilder({
+      where: {
+        // @ts-ignore
+        'categories.name': 'x'
+      }
+    })
+      .isActiveRelations(Genre)
+      .build(), {depth: 5}
+    );
+    const newFilter = new CategoryFilterBuilder(filter)
       .where({
         id
       })
