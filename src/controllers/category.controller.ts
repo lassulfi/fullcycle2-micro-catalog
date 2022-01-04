@@ -54,7 +54,21 @@ export class CategoryController {
   async find(
     @param.filter(Category) filter?: Filter<Category>,
   ): Promise<PaginatorSerializer<Category>> {
-    const newFilter = new CategoryFilterBuilder()
+    const newFilter = new CategoryFilterBuilder({
+      ...filter,
+      // order: ['_score DESC'],
+      // where: {
+        // ['fuzzy' as any]: {
+          // query: 'FloralWhire',
+          // fields: ['name', 'description']
+        // },
+        // ['fuzzy' as any]: {
+          // name: {
+            // query: 'FloralWhire'
+          // }
+        // }
+      // }
+    })
       .build();
     return this.categoryRepository.paginate(newFilter);
   }
@@ -75,15 +89,6 @@ export class CategoryController {
     @param.path.string('id') id: string,
     @param.filter(Category, {exclude: 'where'}) filter?: Filter<Category>
   ): Promise<Category> {
-    console.dir(new CategoryFilterBuilder({
-      where: {
-        // @ts-ignore
-        'categories.name': 'x'
-      }
-    })
-      .isActiveRelations(Genre)
-      .build(), {depth: 5}
-    );
     const newFilter = new CategoryFilterBuilder(filter)
       .where({
         id
