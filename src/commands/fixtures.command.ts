@@ -1,6 +1,5 @@
 import {DefaultCrudRepository} from '@loopback/repository';
 import {default as chalk} from 'chalk';
-import {Client} from 'es7';
 import {MicroCatalogApplication} from '..';
 import config from '../config';
 import {Esv7DataSource} from '../datasources';
@@ -17,16 +16,22 @@ export class FixturesCommand {
     console.log(chalk.green('Fixture data'));
     await this.bootApp();
     console.log(chalk.green('Delete all documents'));
-    await this.deleteAllDocuments();
+    const datasource: Esv7DataSource = this.app.getSync('datasources.esv7');
+    await datasource.deleteAllDocuments();
 
-    const validator = this.app.getSync<ValidatorService>('services.ValidatorService');
+    const validator = this.app.getSync<ValidatorService>(
+      'services.ValidatorService',
+    );
 
     for (const fixture of fixtures) {
-      const repository = this.getRepository<DefaultCrudRepository<any, any>>(fixture.model);
+      const repository = this.getRepository<DefaultCrudRepository<any, any>>(
+        fixture.model,
+      );
       await validator.validate({
         data: fixture.fields,
-        entityClass: (repository as DefaultCrudRepository<any, any>).entityClass
-      })
+        entityClass: (repository as DefaultCrudRepository<any, any>)
+          .entityClass,
+      });
       await (repository as any).create(fixture.fields);
     }
 
@@ -38,25 +43,7 @@ export class FixturesCommand {
     await this.app.boot();
   }
 
-  private async deleteAllDocuments() {
-    const datasource: Esv7DataSource = this.app.getSync<Esv7DataSource>('datasources.esv7');
-
-    // @ts-ignore
-    const index = datasource.adapter.settings.index;
-
-    // @ts-ignore
-    const client: Client = datasource.adapter.db;
-    await client.delete_by_query({
-      index,
-      body: {
-        query: {
-          match_all: {}
-        }
-      }
-    });
-  }
-
-  private getRepository<T>(modelName: string) {
+  private getRepository<T>(modelName: string): T {
     return this.app.getSync(`repositories.${modelName}Repository`);
   }
 }

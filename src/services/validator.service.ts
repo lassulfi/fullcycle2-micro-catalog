@@ -9,13 +9,11 @@ interface ValidateOptions<T> {
 
 @injectable({scope: BindingScope.SINGLETON})
 export class ValidatorService {
-
   cache = new Map();
 
   constructor(
-    @inject(RestBindings.AJV_FACTORY) private ajvFactory: AjvFactory
-  ) {
-  }
+    @inject(RestBindings.AJV_FACTORY) private ajvFactory: AjvFactory,
+  ) {}
 
   async validate<T extends object>({data, entityClass}: ValidateOptions<T>) {
     const modelSchema = getModelSchemaRef(entityClass);
@@ -38,7 +36,7 @@ export class ValidatorService {
         obj[key] = value;
         return obj;
       },
-      {}
+      {},
     );
 
     await validateRequestBody(
@@ -46,8 +44,8 @@ export class ValidatorService {
       {required: true, content: {}},
       globalSchemas,
       {
-        ajvFactory: this.ajvFactory
-      }
+        ajvFactory: this.ajvFactory,
+      },
     );
   }
 }

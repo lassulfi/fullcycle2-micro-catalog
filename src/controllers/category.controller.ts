@@ -12,7 +12,7 @@ import {
   getModelSchemaRef,
 } from '@loopback/rest';
 import {CategoryFilterBuilder} from '../filters';
-import {Category, Genre} from '../models';
+import {Category} from '../models';
 import {CategoryRepository} from '../repositories';
 import {PaginatorSerializer} from '../utils/paginator';
 

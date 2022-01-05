@@ -22,7 +22,7 @@ export class Category extends Entity {
     jsonSchema: {
       minLength: 1,
       maxLength: 255,
-    }
+    },
   })
   name: string;
 
@@ -31,8 +31,8 @@ export class Category extends Entity {
     required: false,
     default: null,
     jsonSchema: {
-      nullable: true
-    }
+      nullable: true,
+    },
   })
   description: string;
 
@@ -45,13 +45,13 @@ export class Category extends Entity {
 
   @property({
     type: 'date',
-    required: true
+    required: true,
   })
   created_at: string;
 
   @property({
     type: 'date',
-    required: true
+    required: true,
   })
   updated_at: string;
 

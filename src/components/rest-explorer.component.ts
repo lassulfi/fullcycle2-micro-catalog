@@ -3,11 +3,11 @@ import {Component} from '@loopback/core';
 import {
   createControllerFactoryForClass,
   RestBindings,
-  RestServer
+  RestServer,
 } from '@loopback/rest';
 import {
   RestExplorerBindings,
-  RestExplorerConfig
+  RestExplorerConfig,
 } from '@loopback/rest-explorer';
 import {ExplorerController} from '@loopback/rest-explorer/dist/rest-explorer.controller';
 

@@ -2,7 +2,7 @@ import {Entity, model, property} from '@loopback/repository';
 
 export enum CastMemberTypes {
   TYPE_DIRECTOR = 1,
-  TYPE_ACTOR = 2
+  TYPE_ACTOR = 2,
 }
 
 @model()
@@ -21,7 +21,7 @@ export class CastMember extends Entity {
     jsonSchema: {
       minLength: 1,
       maxLength: 255,
-    }
+    },
   })
   name: string;
 
@@ -29,20 +29,20 @@ export class CastMember extends Entity {
     type: 'number',
     required: true,
     jsonSchema: {
-      enum: [CastMemberTypes.TYPE_DIRECTOR, CastMemberTypes.TYPE_ACTOR]
-    }
+      enum: [CastMemberTypes.TYPE_DIRECTOR, CastMemberTypes.TYPE_ACTOR],
+    },
   })
   type: number;
 
   @property({
     type: 'date',
-    required: true
+    required: true,
   })
   created_at: string;
 
   @property({
     type: 'date',
-    required: true
+    required: true,
   })
   updated_at: string;
 

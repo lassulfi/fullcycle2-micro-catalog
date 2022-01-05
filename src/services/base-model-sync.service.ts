@@ -18,12 +18,8 @@ export interface SyncRelationOptions {
   message: Message;
 }
 
-
 export abstract class BaseModelSyncService {
-
-  constructor(
-    public validateService: ValidatorService
-  ) {}
+  constructor(public validateService: ValidatorService) {}
 
   protected async sync({repo, data, message}: SyncOptions) {
     const {id} = data || {};
@@ -33,7 +29,7 @@ export abstract class BaseModelSyncService {
       case 'created':
         await this.validateService.validate({
           data: entity,
-          entityClass: repo.entityClass
+          entityClass: repo.entityClass,
         });
         await repo.create(entity);
         break;
@@ -54,12 +50,20 @@ export abstract class BaseModelSyncService {
     return pick(data, Object.keys(repo.entityClass.definition.properties));
   }
 
-  protected async updateOrCreate({repo, id, entity}: {repo: DefaultCrudRepository<any, any>, id: string, entity: any}) {
+  protected async updateOrCreate({
+    repo,
+    id,
+    entity,
+  }: {
+    repo: DefaultCrudRepository<any, any>;
+    id: string;
+    entity: any;
+  }) {
     const exists = await repo.exists(id);
     await this.validateService.validate({
       data: entity,
       entityClass: repo.entityClass,
-      ...(exists && {options: {partial: true}})
+      ...(exists && {options: {partial: true}}),
     });
     return exists ? repo.updateById(id, entity) : repo.create(entity);
   }
@@ -70,19 +74,22 @@ export abstract class BaseModelSyncService {
     relationName,
     relationIds,
     relationRepo,
-    message
-    }: SyncRelationOptions) {
+    message,
+  }: SyncRelationOptions) {
     const fieldsRelation = this.extractFieldsRelation(repo, relationName);
 
     const collection = await relationRepo.find({
       where: {
-        or: relationIds.map((idRelation) => ({id: idRelation}))
+        or: relationIds.map(idRelation => ({id: idRelation})),
       },
-      fields: fieldsRelation
+      fields: fieldsRelation,
     });
 
     if (!collection.length) {
-      const error = new EntityNotFoundError(relationRepo.entityClass, relationIds);
+      const error = new EntityNotFoundError(
+        relationRepo.entityClass,
+        relationIds,
+      );
       error.name = 'EntityNotFound';
       throw error;
     }
@@ -96,12 +103,14 @@ export abstract class BaseModelSyncService {
 
   protected extractFieldsRelation(
     repo: DefaultCrudRepository<any, any>,
-    relation: string
+    relation: string,
   ) {
-    return  Object.keys(repo.modelClass.definition.properties[relation].jsonSchema.items.properties)
-    .reduce((obj: any, field: string) => {
+    return Object.keys(
+      repo.modelClass.definition.properties[relation].jsonSchema.items
+        .properties,
+    ).reduce((obj: any, field: string) => {
       obj[field] = true;
-      return obj
+      return obj;
     }, {});
   }
 }

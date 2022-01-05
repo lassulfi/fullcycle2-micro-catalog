@@ -6,11 +6,9 @@ import {RestExplorerBindings} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 import {EntityComponent, RestExplorerComponent, ValidatorsComponent} from './components';
-import {Category} from './models';
 import {ApiResourceProvider} from './providers/api-resource.provider';
 import {MySequence} from './sequence';
 import {RabbitmqServer} from './servers';
-import {ValidatorService} from './services/validator.service';
 // import {CrudRestComponent} from '@loopback/rest-crud';
 
 export {ApplicationConfig};

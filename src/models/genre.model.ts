@@ -17,7 +17,7 @@ export class Genre extends Entity {
     jsonSchema: {
       minLength: 1,
       maxLength: 255,
-    }
+    },
   })
   name: string;
 
@@ -49,18 +49,18 @@ export class Genre extends Entity {
         type: 'object',
         properties: {
           id: {
-            type: 'string'
+            type: 'string',
           },
           name: {
-            type: 'string'
+            type: 'string',
           },
           is_active: {
-            type: 'boolean'
-          }
-        }
+            type: 'boolean',
+          },
+        },
       },
-      uniqueItems: true
-    }
+      uniqueItems: true,
+    },
   })
   categories: SmallCategory;
 

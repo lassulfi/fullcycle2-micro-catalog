@@ -1,23 +1,34 @@
 import {Binding, Context, inject, MetadataInspector} from '@loopback/context';
 import {Application, CoreBindings, Server} from '@loopback/core';
-import {AmqpConnectionManager, AmqpConnectionManagerOptions, ChannelWrapper, connect} from 'amqp-connection-manager';
+import {
+  AmqpConnectionManager,
+  AmqpConnectionManagerOptions,
+  ChannelWrapper,
+  connect,
+} from 'amqp-connection-manager';
 import {Channel, ConfirmChannel, Message, Options} from 'amqplib';
-import {RabbitmqSubscribeMetadata, RABBITMQ_SUBSCRIBE_DECORATOR} from '../decorators';
+import {
+  RabbitmqSubscribeMetadata,
+  RABBITMQ_SUBSCRIBE_DECORATOR,
+} from '../decorators';
 import {RabbitmqBindings} from '../keys';
 
 export enum ResponseEnum {
   ACK,
   REQUEUE,
-  NACK
+  NACK,
 }
 
 export interface RabbitmqConfig {
   uri: string;
   connOptions?: AmqpConnectionManagerOptions;
   exchanges?: {name: string; type: string; options?: Options.AssertExchange}[];
-  queues?: {name: string; exchange?: {name: string; routingKey: string}; options?: Options.AssertQueue}[]
+  queues?: {
+    name: string;
+    exchange?: {name: string; routingKey: string};
+    options?: Options.AssertQueue;
+  }[];
   defaultHandlerError?: ResponseEnum;
-
 }
 
 export class RabbitmqServer extends Context implements Server {
@@ -29,7 +40,7 @@ export class RabbitmqServer extends Context implements Server {
 
   constructor(
     @inject(CoreBindings.APPLICATION_INSTANCE) public app: Application,
-    @inject(RabbitmqBindings.CONFIG) private config: RabbitmqConfig
+    @inject(RabbitmqBindings.CONFIG) private config: RabbitmqConfig,
   ) {
     super(app);
   }
@@ -43,7 +54,9 @@ export class RabbitmqServer extends Context implements Server {
     });
     this._channelManager.on('error', (err, {name}) => {
       this._listening = false;
-      console.error(`Failed to setup RabbitMQ channel name: ${name} | error: ${err.message}`)
+      console.error(
+        `Failed to setup RabbitMQ channel name: ${name} | error: ${err.message}`,
+      );
     });
     await this.setupExchanges();
     await this.setupQueues();
@@ -56,9 +69,15 @@ export class RabbitmqServer extends Context implements Server {
         return;
       }
 
-      await Promise.all(this.config.exchanges.map((exchange) => (
-        channel.assertExchange(exchange.name, exchange.type, exchange.options)
-      )));
+      await Promise.all(
+        this.config.exchanges.map(exchange =>
+          channel.assertExchange(
+            exchange.name,
+            exchange.type,
+            exchange.options,
+          ),
+        ),
+      );
     });
   }
 
@@ -68,51 +87,65 @@ export class RabbitmqServer extends Context implements Server {
         return;
       }
 
-      await Promise.all(this.config.queues.map(async (queue) => {
-        await channel.assertQueue(queue.name, queue.options);
-        if (!queue.exchange) {
-          return;
-        }
-        await channel.bindQueue(queue.name, queue.exchange.name, queue.exchange.routingKey);
-      }));
+      await Promise.all(
+        this.config.queues.map(async queue => {
+          await channel.assertQueue(queue.name, queue.options);
+          if (!queue.exchange) {
+            return;
+          }
+          await channel.bindQueue(
+            queue.name,
+            queue.exchange.name,
+            queue.exchange.routingKey,
+          );
+        }),
+      );
     });
   }
 
   private async bindSubscribers() {
-    this
-      .getSubscribers()
-      .map(async (item: {method: Function, metadata: RabbitmqSubscribeMetadata}) => {
+    this.getSubscribers().map(
+      async (item: {method: Function; metadata: RabbitmqSubscribeMetadata}) => {
         await this.channelManager.addSetup(async (channel: ConfirmChannel) => {
           const {exchange, queue, routingKey, queueOptions} = item.metadata;
           const assertQueue = await channel.assertQueue(
             queue ?? '',
-            queueOptions ?? undefined
+            queueOptions ?? undefined,
           );
 
-          const routingKeys = Array.isArray(routingKey) ? routingKey : [routingKey];
+          const routingKeys = Array.isArray(routingKey)
+            ? routingKey
+            : [routingKey];
 
           await Promise.all(
-            routingKeys.map(key => channel.bindQueue(assertQueue.queue, exchange, key))
+            routingKeys.map(key =>
+              channel.bindQueue(assertQueue.queue, exchange, key),
+            ),
           );
 
           await this.consume({
             channel,
             queue: assertQueue.queue,
-            method: item.method
+            method: item.method,
           });
         });
-      });
+      },
+    );
   }
 
-  private getSubscribers(): {method: Function, metadata: RabbitmqSubscribeMetadata}[] {
+  private getSubscribers(): {
+    method: Function;
+    metadata: RabbitmqSubscribeMetadata;
+  }[] {
     const bindings: Array<Readonly<Binding>> = this.find('services.*');
 
     return bindings
-    .map(
-      binding => {
-        const metadata = MetadataInspector.getAllMethodMetadata<RabbitmqSubscribeMetadata>(
-          RABBITMQ_SUBSCRIBE_DECORATOR, binding.source?.value.prototype
-        );
+      .map(binding => {
+        const metadata =
+          MetadataInspector.getAllMethodMetadata<RabbitmqSubscribeMetadata>(
+            RABBITMQ_SUBSCRIBE_DECORATOR,
+            binding.source?.value.prototype,
+          );
         if (!metadata) {
           return [];
         }
@@ -130,18 +163,25 @@ export class RabbitmqServer extends Context implements Server {
         }
 
         return methods;
-      }
-    )
-    .reduce((collection: any, item: any) => {
-      collection.push(...item);
-      return collection;
-    }, []);
+      })
+      .reduce((collection: any, item: any) => {
+        collection.push(...item);
+        return collection;
+      }, []);
   }
 
-  private async consume({channel, queue, method}: {channel: ConfirmChannel, queue: string, method: Function}): Promise<void> {
+  private async consume({
+    channel,
+    queue,
+    method,
+  }: {
+    channel: ConfirmChannel;
+    queue: string;
+    method: Function;
+  }): Promise<void> {
     await channel.consume(queue, async message => {
       try {
-        if(!message) {
+        if (!message) {
           throw new Error('Received null message');
         }
 
@@ -159,17 +199,25 @@ export class RabbitmqServer extends Context implements Server {
       } catch (error) {
         console.error(error, {
           routingKey: message?.fields.routingKey,
-          content: message?.content.toString()
+          content: message?.content.toString(),
         });
-        if(!message) {
+        if (!message) {
           return;
         }
-        this.dispatchResponse(channel, message, this.config?.defaultHandlerError);
+        this.dispatchResponse(
+          channel,
+          message,
+          this.config?.defaultHandlerError,
+        );
       }
     });
   }
 
-  private dispatchResponse(channel: Channel, message: Message, responseType?: ResponseEnum) {
+  private dispatchResponse(
+    channel: Channel,
+    message: Message,
+    responseType?: ResponseEnum,
+  ) {
     switch (responseType) {
       case ResponseEnum.REQUEUE:
         channel.nack(message, false, true);
@@ -184,13 +232,13 @@ export class RabbitmqServer extends Context implements Server {
   }
 
   canDeadLetter({channel, message}: {channel: Channel; message: Message}) {
-    if(message.properties.headers && 'x-death' in message.properties.headers) {
+    if (message.properties.headers && 'x-death' in message.properties.headers) {
       const count = message.properties.headers['x-death']![0].count;
       if (count >= this.maxAttempts) {
         channel.ack(message);
         const queue = message.properties.headers['x-death']![0].queue;
         console.error(
-          `Ack in ${queue} with error. Max attempts exceeded: ${this.maxAttempts}`
+          `Ack in ${queue} with error. Max attempts exceeded: ${this.maxAttempts}`,
         );
         return false;
       }
@@ -203,7 +251,7 @@ export class RabbitmqServer extends Context implements Server {
     const canDeadLetter = this.canDeadLetter({channel, message});
     if (canDeadLetter) {
       console.log('Nack in message', {content: message.content.toString()});
-      channel.nack(message, false, false)
+      channel.nack(message, false, false);
     } else {
       channel.ack(message);
     }

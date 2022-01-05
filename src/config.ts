@@ -18,9 +18,7 @@ const config: ApplicationConfig = {
   rabbitmq: {
     uri: process.env.RABBITMQ_URI,
     defaultHandlerError: parseInt(process.env.RABBITMQ_HANDLER_ERROR ?? '0'),
-    exchanges: [
-      {name: 'dlx.amq.topic', type: 'topic'},
-    ],
+    exchanges: [{name: 'dlx.amq.topic', type: 'topic'}],
     queues: [
       {
         name: 'dlx.sync-videos',
@@ -30,11 +28,11 @@ const config: ApplicationConfig = {
         },
         options: {
           deadLetterExchange: 'amq.topic',
-          messageTTL: 20000
-        }
-      }
-    ]
-  }
+          messageTTL: 20000,
+        },
+      },
+    ],
+  },
 };
 
 export default config;
