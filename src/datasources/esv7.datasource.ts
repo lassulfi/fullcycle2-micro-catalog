@@ -1,103 +1,7 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
 import {Client} from 'es6';
-
-const config = {
-  name: 'esv7',
-  connector: 'esv6',
-  index: 'catalog',
-  version: 7,
-  debug: process.env.APP_ENV === 'dev',
-  defaultSize: 50,
-  configuration: {
-    node: process.env.ELASTICSEARCH_HOST,
-    requestTimeout: process.env.ELASTICSEARCH_REQUEST_TIMEOUT,
-    pingTimeout: process.env.ELASTICSEARCH_PING_TIMEOUT
-  },
-  indexSettings: {
-    number_of_shards: 1,
-    number_of_replicas: 1,
-    max_ngram_diff: 7,
-    analysis: {
-      analyzer: {
-        ngram_token_analyzer: {
-          type: 'custom',
-          stopwords: '_none_', //Default _english_
-          //When not customized, the filter removes the following English stop words by default:
-          //a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with
-          filter: ['lowercase', 'asciifolding', 'no_stop', 'ngram_filter'],
-          tokenizer: 'whitespace',
-          //When not customized, the filter removes the following English stop words by default
-        },
-      },
-      filter: {
-        no_stop: {
-          type: 'stop',
-          stopwords: '_none_',
-        },
-        ngram_filter: {
-          type: 'nGram',
-          min_gram: '2',
-          max_gram: '9',
-          //"Loopback"
-          //Tokens gerados [ L, Lo, o, oo, p, pb, b, ba, a, ac, c, ck, k ]
-        },
-      },
-    },
-  },
-  mappingProperties:  {
-    docType: {
-      type: "keyword"
-    },
-    id: {
-      type: "keyword"
-    },
-    name: {
-      type: "text",
-      analyzer: 'ngram_token_analyzer',
-      search_analyzer: 'ngram_token_analyzer',
-      fields: {
-        keyword: {
-          type: "keyword",
-          ignore_above: 256
-        }
-      }
-    },
-    description: {
-      type: "text",
-      analyzer: 'ngram_token_analyzer',
-      search_analyzer: 'ngram_token_analyzer',
-    },
-    is_active: {
-      type: "boolean"
-    },
-    type: {
-      type: "byte"
-    },
-    created_at: {
-      type: "date"
-    },
-    updated_at: {
-      type: "date"
-    },
-    categories: {
-      type: 'nested',
-      properties: {
-        id: { type: 'keyword' },
-        name: {
-          type: 'text',
-          fields: {
-            keyword: {
-              type: "keyword",
-              ignore_above: 256
-            }
-          }
-        },
-        is_active: { type: 'boolean' }
-      }
-    }
-  }
-};
+import dbConfig from './esv7.datasource.config';
 
 // Observe application's life cycle to disconnect the datasource when
 // application is stopped. This allows the application to be shut down
@@ -107,11 +11,11 @@ const config = {
 export class Esv7DataSource extends juggler.DataSource
   implements LifeCycleObserver {
   static dataSourceName = 'esv7';
-  static readonly defaultConfig = config;
+  static readonly defaultConfig = dbConfig;
 
   constructor(
     @inject('datasources.config.esv7', {optional: true})
-    dsConfig: object = config,
+    dsConfig: object = dbConfig,
   ) {
     super(dsConfig);
   }
