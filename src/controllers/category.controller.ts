@@ -1,4 +1,5 @@
 import {authenticate} from '@loopback/authentication';
+import {authorize} from '@loopback/authorization';
 import {
   Count,
   CountSchema,
@@ -13,6 +14,7 @@ import {CategoryRepository} from '../repositories';
 import {PaginatorSerializer} from '../utils/paginator';
 
 @authenticate('jwt')
+@authorize({allowedRoles: ['subscriber', 'catalog-admin']})
 export class CategoryController {
   constructor(
     @repository(CategoryRepository)

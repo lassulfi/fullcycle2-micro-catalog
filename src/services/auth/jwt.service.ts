@@ -40,9 +40,10 @@ export class JWTService implements TokenService {
       userProfile = Object.assign(
         {[securityId]: '', name: ''},
         {
-          [securityId]: decodedToken.id,
+          [securityId]: decodedToken.sub,
           name: decodedToken.name,
-          id: decodedToken.id,
+          id: decodedToken.sub,
+          roles: decodedToken.realm_access?.roles || [],
         },
       );
     } catch (error) {
