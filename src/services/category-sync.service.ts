@@ -2,7 +2,6 @@ import {injectable, /* inject, */ BindingScope, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {Message} from 'amqplib';
 import {rabbitmqSubscribe} from '../decorators';
-import {Category} from '../models';
 import {CategoryRepository} from '../repositories';
 import {BaseModelSyncService} from './base-model-sync.service';
 import {ValidatorService} from './validator.service';
@@ -11,7 +10,7 @@ import {ValidatorService} from './validator.service';
 export class CategorySyncService extends BaseModelSyncService {
   constructor(
     @repository(CategoryRepository) private repo: CategoryRepository,
-    @service(ValidatorService) private validator: ValidatorService
+    @service(ValidatorService) private validator: ValidatorService,
   ) {
     super(validator);
   }
@@ -22,13 +21,13 @@ export class CategorySyncService extends BaseModelSyncService {
     routingKey: 'model.category.*',
     queueOptions: {
       deadLetterExchange: 'dlx.amq.topic',
-    }
+    },
   })
-  async handler({data, message}: {data: any, message: Message}) {
+  async handler({data, message}: {data: any; message: Message}) {
     await this.sync({
       repo: this.repo,
       data,
-      message
+      message,
     });
   }
 }

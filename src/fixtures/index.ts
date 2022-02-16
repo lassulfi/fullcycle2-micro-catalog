@@ -1,5 +1,3 @@
-import categories from './category.fixtures'
+import categories from './category.fixtures';
 
-export default [
-  ...categories
-];
+export default [...categories];

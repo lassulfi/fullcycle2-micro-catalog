@@ -10,11 +10,9 @@ import {
   RestExplorerComponent,
   ValidatorsComponent,
 } from './components';
-import {Category} from './models';
 import {ApiResourceProvider} from './providers/api-resource.provider';
 import {MySequence} from './sequence';
 import {RabbitmqServer} from './servers';
-import {ValidatorService} from './services/validator.service';
 // import {CrudRestComponent} from '@loopback/rest-crud';
 import {AuthenticationComponent} from '@loopback/authentication';
 import {

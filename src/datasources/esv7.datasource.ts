@@ -1,67 +1,7 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
-
-const config = {
-  name: 'esv7',
-  connector: 'esv6',
-  index: 'catalog',
-  version: 7,
-  debug: process.env.APP_ENV === 'dev',
-  defaultSize: 50,
-  configuration: {
-    node: process.env.ELASTICSEARCH_HOST,
-    requestTimeout: process.env.ELASTICSEARCH_REQUEST_TIMEOUT,
-    pingTimeout: process.env.ELASTICSEARCH_PING_TIMEOUT
-  },
-  mappingProperties:  {
-    docType: {
-      type: "keyword"
-    },
-    id: {
-      type: "keyword"
-    },
-    name: {
-      type: "text",
-      fields: {
-        keyword: {
-          type: "keyword",
-          ignore_above: 256
-        }
-      }
-    },
-    description: {
-      type: "text",
-    },
-    is_active: {
-      type: "boolean"
-    },
-    type: {
-      type: "byte"
-    },
-    created_at: {
-      type: "date"
-    },
-    updated_at: {
-      type: "date"
-    },
-    categories: {
-      type: 'nested',
-      properties: {
-        id: { type: 'keyword' },
-        name: {
-          type: 'text',
-          fields: {
-            keyword: {
-              type: "keyword",
-              ignore_above: 256
-            }
-          }
-        },
-        is_active: { type: 'boolean' }
-      }
-    }
-  }
-};
+import {Client} from 'es6';
+import dbConfig from './esv7.datasource.config';
 
 // Observe application's life cycle to disconnect the datasource when
 // application is stopped. This allows the application to be shut down
@@ -71,12 +11,26 @@ const config = {
 export class Esv7DataSource extends juggler.DataSource
   implements LifeCycleObserver {
   static dataSourceName = 'esv7';
-  static readonly defaultConfig = config;
+  static readonly defaultConfig = dbConfig;
 
   constructor(
     @inject('datasources.config.esv7', {optional: true})
-    dsConfig: object = config,
+    dsConfig: object = dbConfig,
   ) {
     super(dsConfig);
+  }
+
+  public async deleteAllDocuments() {
+    const index = (this as any).adapter.settings.index;
+
+    const client: Client = (this as any).adapter.db;
+    await client.delete_by_query({
+      index,
+      body: {
+        query: {
+          match_all: {}
+        }
+      }
+    });
   }
 }

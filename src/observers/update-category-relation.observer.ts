@@ -12,24 +12,25 @@ import {CategoryRepository, GenreRepository} from '../repositories';
  */
 @lifeCycleObserver('')
 export class UpdateCategoryRelationObserver implements LifeCycleObserver {
-
   constructor(
     @repository(CategoryRepository) private categoryRepo: CategoryRepository,
     @repository(GenreRepository) private genreRepo: GenreRepository,
   ) {}
 
-
   /**
    * This method will be invoked when the application starts
    */
   async start(): Promise<void> {
-    this.categoryRepo.modelClass.observe('after save', async ({where, data, isNewInstance, ...other}) => {
-      if (isNewInstance) {
-        return;
-      }
+    this.categoryRepo.modelClass.observe(
+      'after save',
+      async ({where, data, isNewInstance, ...other}) => {
+        if (isNewInstance) {
+          return;
+        }
 
-      await this.genreRepo.updateRelation('categories', data);
-    });
+        await this.genreRepo.updateRelation('categories', data);
+      },
+    );
   }
 
   /**

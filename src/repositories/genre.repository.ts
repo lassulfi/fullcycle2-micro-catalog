@@ -8,9 +8,7 @@ export class GenreRepository extends BaseRepository<
   typeof Genre.prototype.id,
   GenreRelations
 > {
-  constructor(
-    @inject('datasources.esv7') dataSource: Esv7DataSource,
-  ) {
+  constructor(@inject('datasources.esv7') dataSource: Esv7DataSource) {
     super(Genre, dataSource);
   }
 }
