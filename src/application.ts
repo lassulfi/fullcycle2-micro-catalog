@@ -5,13 +5,23 @@ import {RestBindings, RestComponent, RestServer} from '@loopback/rest';
 import {RestExplorerBindings} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
-import {EntityComponent, RestExplorerComponent, ValidatorsComponent} from './components';
+import {
+  EntityComponent,
+  RestExplorerComponent,
+  ValidatorsComponent,
+} from './components';
 import {Category} from './models';
 import {ApiResourceProvider} from './providers/api-resource.provider';
 import {MySequence} from './sequence';
 import {RabbitmqServer} from './servers';
 import {ValidatorService} from './services/validator.service';
 // import {CrudRestComponent} from '@loopback/rest-crud';
+import {AuthenticationComponent} from '@loopback/authentication';
+import {
+  JWTAuthenticationComponent,
+  TokenServiceBindings,
+} from '@loopback/authentication-jwt';
+import {JWTService} from './services/auth/jwt.service';
 
 export {ApplicationConfig};
 
@@ -31,11 +41,14 @@ export class MicroCatalogApplication extends BootMixin(
       path: '/explorer',
     });
     this.bind(RestBindings.SequenceActions.SEND).toProvider(
-      ApiResourceProvider
+      ApiResourceProvider,
     );
     this.component(RestExplorerComponent);
     this.component(ValidatorsComponent);
     this.component(EntityComponent);
+    this.component(AuthenticationComponent);
+    this.component(JWTAuthenticationComponent);
+    this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here

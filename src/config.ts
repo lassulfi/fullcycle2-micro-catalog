@@ -18,9 +18,7 @@ const config: ApplicationConfig = {
   rabbitmq: {
     uri: process.env.RABBITMQ_URI,
     defaultHandlerError: parseInt(process.env.RABBITMQ_HANDLER_ERROR ?? '0'),
-    exchanges: [
-      {name: 'dlx.amq.topic', type: 'topic'},
-    ],
+    exchanges: [{name: 'dlx.amq.topic', type: 'topic'}],
     queues: [
       {
         name: 'dlx.sync-videos',
@@ -30,11 +28,15 @@ const config: ApplicationConfig = {
         },
         options: {
           deadLetterExchange: 'amq.topic',
-          messageTTL: 20000
-        }
-      }
-    ]
-  }
+          messageTTL: 20000,
+        },
+      },
+    ],
+  },
+  jwt: {
+    secret:
+      '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiZmFM1Cbu+KrkN2SX1TFwDU+zZ9OApfQq09PukRWnYHlpQNWc9/WEO/ySl8NdhgCrcI+5W9ZZB43N3ZwJGRFmGNwVAuVz4SGufwB0gMAw384riQpQj48anLOaLFOL2NOi4OzV4N1DffHqV53wDM08tvnxwGBhLBYLZlv+Lj//6t7cEFrRDgJlK/npWs2RrPVAIzUus7kaNCHsbVvUbUEFS5iYaXQemV5vYriwskM1yhfJA9YCFvfxd7UtqWAOg2e1rwVslivxwuVJcJDR7ww60RJLUUvlXsUEjd84mBtwpk3V7SC4lWDgpuFKsMhlkyHTRuyCPRMiwhYzAg9jmUxtwIDAQAB\n-----END PUBLIC KEY-----',
+  },
 };
 
 export default config;

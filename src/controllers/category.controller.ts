@@ -1,3 +1,4 @@
+import {authenticate} from '@loopback/authentication';
 import {
   Count,
   CountSchema,
@@ -6,19 +7,16 @@ import {
   repository,
   Where,
 } from '@loopback/repository';
-import {
-  param,
-  get,
-  getModelSchemaRef,
-} from '@loopback/rest';
+import {param, get, getModelSchemaRef} from '@loopback/rest';
 import {Category} from '../models';
 import {CategoryRepository} from '../repositories';
 import {PaginatorSerializer} from '../utils/paginator';
 
+@authenticate('jwt')
 export class CategoryController {
   constructor(
     @repository(CategoryRepository)
-    public categoryRepository : CategoryRepository,
+    public categoryRepository: CategoryRepository,
   ) {}
 
   @get('/categories/count', {
@@ -29,9 +27,7 @@ export class CategoryController {
       },
     },
   })
-  async count(
-    @param.where(Category) where?: Where<Category>,
-  ): Promise<Count> {
+  async count(@param.where(Category) where?: Where<Category>): Promise<Count> {
     return this.categoryRepository.count(where);
   }
 
@@ -70,7 +66,8 @@ export class CategoryController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Category, {exclude: 'where'}) filter?: FilterExcludingWhere<Category>
+    @param.filter(Category, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Category>,
   ): Promise<Category> {
     return this.categoryRepository.findById(id, filter);
   }
