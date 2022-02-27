@@ -16,7 +16,6 @@ import {
   SequenceHandler,
 } from '@loopback/rest';
 
-// Tempo de video 17:10
 export class MySequence implements SequenceHandler {
   constructor(
     @inject(SequenceActions.FIND_ROUTE) protected findRoute: FindRoute,
