@@ -61,7 +61,7 @@ export class MicroCatalogApplication extends BootMixin(
     });
 
     this.bind('authorizationProviders.subscriber-provider')
-      .to(SubscriberAuthorizationProvider)
+      .toProvider(SubscriberAuthorizationProvider)
       .tag(AuthorizationTags.AUTHORIZER);
 
     this.projectRoot = __dirname;
